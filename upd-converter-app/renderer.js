@@ -233,11 +233,11 @@ function updateFilesUI() {
 
 function getStatusText(file) {
     switch (file.status) {
-        case 'waiting': return '⏳ Ожидает';
-        case 'processing': return '⏳ Обработка...';
-        case 'success': return '✅ Готово';
-        case 'error': return `❌ Ошибка`;
-        default: return file.status;
+    case 'waiting': return '⏳ Ожидает';
+    case 'processing': return '⏳ Обработка...';
+    case 'success': return '✅ Готово';
+    case 'error': return `❌ Ошибка`;
+    default: return file.status;
     }
 }
 
@@ -573,11 +573,11 @@ function updateLangButton(lang) {
 // Переопределяем getStatusText для локализации
 function getStatusText(file) {
     switch (file.status) {
-        case 'waiting': return t('statusWaiting');
-        case 'processing': return t('statusProcessing');
-        case 'success': return t('statusSuccess');
-        case 'error': return t('statusError');
-        default: return file.status;
+    case 'waiting': return t('statusWaiting');
+    case 'processing': return t('statusProcessing');
+    case 'success': return t('statusSuccess');
+    case 'error': return t('statusError');
+    default: return file.status;
     }
 }
 
