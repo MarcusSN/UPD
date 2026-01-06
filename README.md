@@ -1,5 +1,8 @@
 # УПД Конвертер - Electron Приложение
 
+[![Tests and Linting](https://github.com/MarcusSN/UPD/actions/workflows/test.yml/badge.svg)](https://github.com/MarcusSN/UPD/actions/workflows/test.yml)
+[![Build and Release](https://github.com/MarcusSN/UPD/actions/workflows/build-release.yml/badge.svg)](https://github.com/MarcusSN/UPD/actions/workflows/build-release.yml)
+
 Конвертер УПД из Excel в XML для электронного документооборота (СБИС, Контур.Диадок и др.)
 
 **Формат XML:** ON_NSCHFDOPPR версия 5.03
@@ -56,6 +59,33 @@ npm install
 npm start
 ```
 
+### Тестирование
+
+**Запуск тестов:**
+```bash
+npm test
+```
+
+**Запуск линтера:**
+```bash
+npm run lint
+```
+
+**Автоматическое исправление ошибок стиля:**
+```bash
+npm run lint:fix
+```
+
+**Запуск всех проверок:**
+```bash
+npm run validate
+```
+
+**Тесты с покрытием кода:**
+```bash
+npm test -- --coverage
+```
+
 ### Сборка
 
 **Локально (на Windows):**
@@ -74,15 +104,20 @@ npm run build:portable
 .
 ├── .github/
 │   └── workflows/
-│       └── build-release.yml    # Автоматическая сборка на GitHub
+│       ├── build-release.yml    # Автоматическая сборка на GitHub
+│       └── test.yml             # Автоматические тесты и линтинг
 ├── upd-converter-app/           # Electron приложение
+│   ├── __tests__/               # Тесты
+│   │   └── converter.test.js
 │   ├── package.json             # Зависимости
 │   ├── main.js                  # Главный процесс
 │   ├── renderer.js              # UI логика
 │   ├── converter.js             # Конвертация Excel → XML
 │   ├── locales.js               # Переводы (RU/EN/ZH)
 │   ├── index.html               # Интерфейс
-│   └── styles.css               # Стили
+│   ├── styles.css               # Стили
+│   ├── .eslintrc.json           # Конфиг ESLint
+│   └── jest.config.js           # Конфиг Jest
 └── README.md
 ```
 

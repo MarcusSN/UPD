@@ -11,6 +11,11 @@ dist/
 build/
 *.exe
 
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
 # IDE
 .vscode/
 .idea/
