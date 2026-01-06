@@ -1,11 +1,23 @@
-# УПД Конвертер - Electron Приложение
+# УПД Конвертер
 
 [![Tests and Linting](https://github.com/MarcusSN/UPD/actions/workflows/test.yml/badge.svg)](https://github.com/MarcusSN/UPD/actions/workflows/test.yml)
 [![Build and Release](https://github.com/MarcusSN/UPD/actions/workflows/build-release.yml/badge.svg)](https://github.com/MarcusSN/UPD/actions/workflows/build-release.yml)
+[![GitHub Pages](https://github.com/MarcusSN/UPD/actions/workflows/pages.yml/badge.svg)](https://github.com/MarcusSN/UPD/actions/workflows/pages.yml)
 
 Конвертер УПД из Excel в XML для электронного документооборота (СБИС, Контур.Диадок и др.)
 
 **Формат XML:** ON_NSCHFDOPPR версия 5.03
+
+## 🌐 Веб-версия (рекомендуется!)
+
+**👉 [Попробовать онлайн](https://marcussn.github.io/UPD/)**
+
+✨ Работает прямо в браузере, без установки!
+- ✅ Не требует загрузки программы
+- ✅ Файлы обрабатываются локально (не отправляются на сервер)
+- ✅ Drag & Drop интерфейс
+- ✅ Мгновенная конвертация
+- ✅ Работает на любой платформе (Windows, Mac, Linux)
 
 ## 📥 Скачать портативную версию
 
