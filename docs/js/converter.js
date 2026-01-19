@@ -500,7 +500,7 @@ function generateXML(data, filename) {
 
     // Формируем XML
     const xml = [];
-    xml.push('<?xml version="1.0" encoding="windows-1251"?>');
+    xml.push('<?xml version="1.0" encoding="UTF-8"?>');
     xml.push(`<Файл xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ИдФайл="${fileId}" ВерсФорм="${XML_SETTINGS.version}" ВерсПрог="UPD Converter Web 2.0">`);
 
     xml.push(`\t<Документ КНД="1115131" Функция="${XML_SETTINGS.function}" ПоФактХЖ="Документ об отгрузке товаров (выполнении работ), передаче имущественных прав (документ об оказании услуг)" НаимДокОпр="Документ об отгрузке товаров (выполнении работ), передаче имущественных прав (Документ об оказании услуг)" ДатаИнфПр="${docDateStr}" ВремИнфПр="12.00.00" НаимЭконСубСост="${sellerName}, ИНН/КПП ${sellerInn}/${sellerKpp}">`);
