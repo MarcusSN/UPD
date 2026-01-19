@@ -21,6 +21,7 @@ const progressText = document.getElementById('progress-text');
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    initLanguage();
 });
 
 function setupEventListeners() {
@@ -38,6 +39,14 @@ function setupEventListeners() {
     fileInput.addEventListener('change', handleFileSelect);
     convertBtn.addEventListener('click', handleConvert);
     clearBtn.addEventListener('click', clearFiles);
+
+    // Переключатели языка
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.getAttribute('data-lang');
+            switchLanguage(lang);
+        });
+    });
 }
 
 function handleDragOver(e) {
@@ -89,7 +98,7 @@ function updateFilesList() {
                 <div class="file-name">${escapeHtml(file.name)}</div>
                 <div class="file-size">${formatFileSize(file.size)}</div>
             </div>
-            <button onclick="removeFile(${index})" class="btn-secondary" style="padding: 8px 16px;">Удалить</button>
+            <button onclick="removeFile(${index})" class="btn-secondary" style="padding: 8px 16px;">${t('remove')}</button>
         `;
         filesItems.appendChild(li);
     });
@@ -123,17 +132,17 @@ async function handleConvert() {
 
     for (const file of selectedFiles) {
         try {
-            progressText.textContent = `Конвертация ${file.name}...`;
+            progressText.textContent = t('convertingFile', { file: file.name });
             const xml = await convertExcelToXML(file);
 
             // Скачиваем XML
             downloadXML(xml, file.name);
 
             // Показываем успех
-            addResult(file.name, 'success', '✅ Успешно сконвертирован');
+            addResult(file.name, 'success', '✅ ' + t('successConverted'));
         } catch (error) {
             console.error('Ошибка конвертации:', error);
-            addResult(file.name, 'error', '❌ Ошибка: ' + error.message);
+            addResult(file.name, 'error', '❌ ' + t('errorPrefix') + ' ' + error.message);
         }
 
         processedFiles++;
@@ -141,7 +150,7 @@ async function handleConvert() {
         progressFill.style.width = percent + '%';
     }
 
-    progressText.textContent = `Готово! Обработано файлов: ${totalFiles}`;
+    progressText.textContent = t('doneProcessed', { count: totalFiles });
 
     setTimeout(() => {
         hideSection(progress);
@@ -198,3 +207,59 @@ window.addEventListener('dragover', (e) => {
 window.addEventListener('drop', (e) => {
     e.preventDefault();
 }, false);
+
+// ========== Локализация ==========
+
+/**
+ * Инициализация языка при загрузке страницы
+ */
+function initLanguage() {
+    // Пытаемся загрузить сохранённый язык
+    let savedLang = localStorage.getItem('upd-converter-lang');
+
+    // Если нет сохранённого — определяем по браузеру
+    if (!savedLang) {
+        const browserLang = navigator.language.substring(0, 2);
+        savedLang = getAvailableLanguages().includes(browserLang) ? browserLang : 'ru';
+    }
+
+    switchLanguage(savedLang);
+}
+
+/**
+ * Переключение языка
+ */
+function switchLanguage(lang) {
+    if (setLanguage(lang)) {
+        // Сохраняем выбор
+        localStorage.setItem('upd-converter-lang', lang);
+
+        // Обновляем активную кнопку
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+        });
+
+        // Обновляем HTML lang атрибут
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+    }
+}
+
+/**
+ * Обновление списка файлов с учётом локализации
+ */
+function updateFilesListLocalized() {
+    filesItems.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span class="file-icon">📄</span>
+            <div class="file-info">
+                <div class="file-name">${escapeHtml(file.name)}</div>
+                <div class="file-size">${formatFileSize(file.size)}</div>
+            </div>
+            <button onclick="removeFile(${index})" class="btn-secondary" style="padding: 8px 16px;">${t('clearAll').split(' ')[0]}</button>
+        `;
+        filesItems.appendChild(li);
+    });
+}
