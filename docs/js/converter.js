@@ -1,5 +1,5 @@
 /**
- * УПД Конвертер - Браузерная версия
+ * УПД Конвертер - Улучшенная браузерная версия
  * Конвертирует Excel в XML формат ON_NSCHFDOPPR версия 5.03
  */
 
@@ -57,7 +57,7 @@ function escapeXml(text) {
 
 function formatNumber(value, decimals = 2) {
     if (value === null || value === undefined) return '0.00';
-    const num = parseFloat(value);
+    const num = parseFloat(String(value).replace(/\s/g, '').replace(',', '.'));
     if (isNaN(num)) return '0.00';
     return num.toFixed(decimals);
 }
@@ -76,7 +76,6 @@ async function convertExcelToXML(file) {
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null });
 
-                // Простая конвертация (можно расширить)
                 const xml = generateXML(jsonData, file.name);
                 resolve(xml);
             } catch (error) {
@@ -122,6 +121,9 @@ function generateXML(data, filename) {
 
     // Извлекаем товары
     const items = extractItems(data);
+
+    console.log(`Найдено товаров: ${items.length}`);
+
     items.forEach((item, index) => {
         xml += `
             <СведТов НомСтр="${index + 1}" НаимТов="${escapeXml(item.name)}" ОКЕИ_Тов="796" КолТов="${formatNumber(item.quantity, 3)}" ЦенаТов="${formatNumber(item.price)}" СтТовБезНДС="${formatNumber(item.sumWithoutVAT)}" НалСт="20%" СумНал="${formatNumber(item.vatSum)}" СтТовУчНал="${formatNumber(item.sumWithVAT)}">
@@ -148,83 +150,171 @@ function generateXML(data, filename) {
 }
 
 function extractDocNumber(data) {
-    // Поиск номера документа
+    // Поиск номера документа в первых 20 строках
+    for (let i = 0; i < Math.min(20, data.length); i++) {
+        const row = data[i];
+        if (!row) continue;
+
+        // Ищем ячейку с номером
+        for (let j = 0; j < row.length - 1; j++) {
+            const cell = String(row[j] || '');
+            if (cell.includes('Счет-фактура') && row[j + 1]) {
+                const nextCell = String(row[j + 1]);
+                const match = nextCell.match(/№?\s*(\d+)/);
+                if (match) return match[1];
+            }
+        }
+    }
+
+    // Альтернативный поиск
     for (let i = 0; i < Math.min(20, data.length); i++) {
         const row = data[i];
         if (!row) continue;
         for (let j = 0; j < row.length; j++) {
-            const cell = row[j];
-            if (cell && String(cell).includes('№')) {
-                return row[j + 1] || '1';
+            const cell = String(row[j] || '');
+            if (cell.match(/^№?\s*\d+$/)) {
+                return cell.replace(/[^\d]/g, '');
             }
         }
     }
+
     return '1';
 }
 
 function extractDocDate(data) {
-    // Поиск даты документа
+    // Поиск даты в первых 20 строках
     for (let i = 0; i < Math.min(20, data.length); i++) {
         const row = data[i];
         if (!row) continue;
+
         for (let j = 0; j < row.length; j++) {
-            const cell = row[j];
-            if (cell && (String(cell).includes('от') || String(cell).includes('дата'))) {
-                const dateStr = row[j + 1];
-                return parseDate(dateStr) || getCurrentDate();
+            const cell = String(row[j] || '');
+
+            // Проверяем различные форматы дат
+            if (cell.match(/\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\s+\d{4}/i)) {
+                return parseDate(cell) || getCurrentDate();
+            }
+            if (cell.match(/\d{2}\.\d{2}\.\d{4}/)) {
+                return parseDate(cell) || getCurrentDate();
             }
         }
     }
+
     return getCurrentDate();
 }
 
 function extractItems(data) {
     const items = [];
-    let startRow = -1;
+    let headerRow = -1;
+    let columns = {};
 
-    // Поиск начала таблицы товаров
+    // Шаг 1: Найти строку с заголовками таблицы
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
         if (!row) continue;
-        for (const cell of row) {
-            if (cell && (String(cell).includes('№') && String(cell).includes('п/п'))) {
-                startRow = i + 2; // Пропускаем заголовок
+
+        // Ищем характерные заголовки
+        for (let j = 0; j < row.length; j++) {
+            const cell = String(row[j] || '').toLowerCase();
+
+            // Если нашли колонку "№ п/п" или похожую
+            if (cell.includes('п/п') || cell.includes('п.п')) {
+                headerRow = i;
+
+                // Определяем позиции колонок по заголовкам
+                for (let k = 0; k < row.length; k++) {
+                    const header = String(row[k] || '').toLowerCase();
+
+                    if (header.includes('наименование') || header.includes('название')) {
+                        columns.name = k;
+                    }
+                    if (header.includes('количество') || header.includes('кол-во') || header.includes('кол.')) {
+                        columns.quantity = k;
+                    }
+                    if (header.includes('цена') && !header.includes('сумма')) {
+                        columns.price = k;
+                    }
+                    if (header.includes('стоимость') && header.includes('без') && header.includes('ндс')) {
+                        columns.sumWithoutVAT = k;
+                    }
+                    if (header.includes('сумма') && header.includes('ндс') && !header.includes('без')) {
+                        columns.vatSum = k;
+                    }
+                    if (header.includes('стоимость') && header.includes('ндс')) {
+                        columns.sumWithVAT = k;
+                    }
+                }
                 break;
             }
         }
-        if (startRow !== -1) break;
+
+        if (headerRow !== -1) break;
     }
 
-    if (startRow === -1) return items;
+    console.log('Найдена строка заголовков:', headerRow);
+    console.log('Определенные колонки:', columns);
 
-    // Извлекаем товары
-    for (let i = startRow; i < data.length && items.length < 100; i++) {
+    if (headerRow === -1) {
+        console.error('Заголовки таблицы не найдены');
+        return items;
+    }
+
+    // Шаг 2: Извлечь товары, начиная со следующей строки
+    const startRow = headerRow + 1;
+
+    for (let i = startRow; i < data.length && items.length < 200; i++) {
         const row = data[i];
-        if (!row || row.length < 10) continue;
+        if (!row) continue;
 
-        const rowNum = row[5];
-        const name = row[9];
-        const quantity = row[10];
-        const price = row[11];
+        // Получаем значения из определенных колонок
+        const name = row[columns.name];
+        const quantity = row[columns.quantity];
+        const price = row[columns.price];
+        const sumWithoutVAT = row[columns.sumWithoutVAT];
+        const vatSum = row[columns.vatSum];
+        const sumWithVAT = row[columns.sumWithVAT];
 
-        if (!name || String(name).length < 3) break;
+        // Проверка: если наименование пустое или слишком короткое - конец таблицы
+        if (!name || String(name).trim().length < 2) {
+            break;
+        }
 
-        const qty = parseFloat(quantity) || 1;
-        const prc = parseFloat(price) || 0;
-        const sumWithoutVAT = qty * prc;
-        const vatSum = sumWithoutVAT * 0.20;
-        const sumWithVAT = sumWithoutVAT + vatSum;
+        // Проверка: если это итоговая строка
+        const nameStr = String(name).toLowerCase();
+        if (nameStr.includes('всего') || nameStr.includes('итого')) {
+            break;
+        }
+
+        // Парсим числовые значения
+        const qty = parseFloat(String(quantity || '1').replace(/\s/g, '').replace(',', '.')) || 1;
+        const prc = parseFloat(String(price || '0').replace(/\s/g, '').replace(',', '.')) || 0;
+
+        // Используем готовые суммы если есть, иначе считаем
+        let sum = parseFloat(String(sumWithoutVAT || '0').replace(/\s/g, '').replace(',', '.'));
+        let vat = parseFloat(String(vatSum || '0').replace(/\s/g, '').replace(',', '.'));
+        let total = parseFloat(String(sumWithVAT || '0').replace(/\s/g, '').replace(',', '.'));
+
+        if (!sum || sum === 0) {
+            sum = qty * prc;
+        }
+        if (!vat || vat === 0) {
+            vat = sum * 0.20;
+        }
+        if (!total || total === 0) {
+            total = sum + vat;
+        }
 
         items.push({
-            name: String(name),
+            name: String(name).trim(),
             quantity: qty,
             price: prc,
-            sumWithoutVAT,
-            vatSum,
-            sumWithVAT
+            sumWithoutVAT: sum,
+            vatSum: vat,
+            sumWithVAT: total
         });
     }
 
+    console.log(`Извлечено товаров: ${items.length}`);
     return items;
 }
 
